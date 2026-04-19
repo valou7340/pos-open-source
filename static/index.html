@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>POS — La Medusa</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #1a1a2e; --bg2: #16213e; --bg3: #0f3460;
+  --accent: #e94560; --accent2: #0f3460; --green: #27ae60;
+  --yellow: #f39c12; --blue: #2980b9; --purple: #8e44ad;
+  --text: #eee; --text2: #aaa; --border: #2a2a4a;
+  --radius: 8px; --shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text);
+       height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+
+/* ── Header ── */
+#header { background: var(--bg2); padding: 8px 12px; display: flex; align-items: center;
+          gap: 8px; border-bottom: 2px solid var(--accent); flex-shrink: 0; flex-wrap: wrap; }
+#header h1 { font-size: 1.1rem; color: var(--accent); flex: none; }
+#table-select { background: var(--bg3); color: var(--text); border: 1px solid var(--border);
+                border-radius: var(--radius); padding: 6px 10px; font-size: 0.9rem;
+                min-width: 120px; }
+.hbtn { padding: 6px 12px; border-radius: var(--radius); border: none; cursor: pointer;
+        font-size: 0.82rem; font-weight: 600; }
+.hbtn.red { background: var(--accent); color: #fff; }
+.hbtn.blue { background: var(--blue); color: #fff; }
+.hbtn.yellow { background: var(--yellow); color: #fff; }
+.hbtn.purple { background: var(--purple); color: #fff; }
+.hbtn.green { background: var(--green); color: #fff; }
+#ws-status { margin-left: auto; font-size: 0.75rem; color: var(--text2); }
+#ws-status.ok { color: var(--green); }
+
+/* ── Layout ── */
+#main { display: flex; flex: 1; overflow: hidden; }
+
+/* ── Menu panel ── */
+#menu-panel { width: 55%; border-right: 1px solid var(--border);
+              display: flex; flex-direction: column; overflow: hidden; }
+#cat-tabs { display: flex; gap: 4px; padding: 6px; overflow-x: auto; flex-shrink: 0;
+            background: var(--bg2); scrollbar-width: none; }
+#cat-tabs::-webkit-scrollbar { display: none; }
+.cat-tab { padding: 6px 14px; border-radius: 20px; background: var(--bg3); color: var(--text);
+           border: none; cursor: pointer; font-size: 0.8rem; white-space: nowrap; flex-shrink: 0; }
+.cat-tab.active { background: var(--accent); }
+#items-grid { flex: 1; overflow-y: auto; padding: 6px;
+              display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; }
+.item-btn { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 10px 6px; cursor: pointer; text-align: center; display: flex;
+            flex-direction: column; align-items: center; gap: 4px; transition: transform .1s;
+            min-height: 70px; justify-content: center; }
+.item-btn:active { transform: scale(.95); background: var(--bg3); }
+.item-btn .name { font-size: 0.78rem; font-weight: 600; color: var(--text); line-height: 1.2; }
+.item-btn .price { font-size: 0.82rem; color: var(--accent); font-weight: 700; }
+
+/* ── Order panel ── */
+#order-panel { width: 45%; display: flex; flex-direction: column; overflow: hidden; }
+#order-header { padding: 8px 10px; background: var(--bg2); font-size: 0.85rem;
+                font-weight: 700; color: var(--text); border-bottom: 1px solid var(--border);
+                display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+#order-list { flex: 1; overflow-y: auto; padding: 4px; }
+.order-item { display: flex; align-items: center; gap: 6px; padding: 6px;
+              border-bottom: 1px solid var(--border); }
+.oi-name { flex: 1; font-size: 0.82rem; }
+.oi-price { font-size: 0.8rem; color: var(--text2); width: 50px; text-align: right; }
+.qty-btn { background: var(--bg3); border: none; color: var(--text); width: 28px; height: 28px;
+           border-radius: 4px; cursor: pointer; font-size: 1rem; }
+.oi-qty { width: 24px; text-align: center; font-size: 0.85rem; }
+.oi-del { background: var(--accent); border: none; color: #fff; width: 26px; height: 26px;
+          border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+#order-total { padding: 8px 10px; background: var(--bg2); border-top: 1px solid var(--border);
+               font-size: 1rem; font-weight: 700; text-align: right; flex-shrink: 0; }
+#payment-area { padding: 8px; display: flex; flex-direction: column; gap: 6px;
+                background: var(--bg2); flex-shrink: 0; }
+.pay-row { display: flex; gap: 6px; }
+.pay-btn { flex: 1; padding: 10px; border: none; border-radius: var(--radius); cursor: pointer;
+           font-size: 0.82rem; font-weight: 700; color: #fff; }
+.pay-btn.especes { background: var(--green); }
+.pay-btn.cb { background: var(--blue); }
+.pay-btn.ticket { background: var(--yellow); color: #333; }
+#print-btn { padding: 10px; border: none; border-radius: var(--radius); cursor: pointer;
+             font-size: 0.82rem; font-weight: 700; background: var(--purple); color: #fff; }
+
+/* ── Modal ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+                 display: flex; align-items: center; justify-content: center; z-index: 100; }
+.modal { background: var(--bg2); border-radius: 12px; padding: 20px; min-width: 280px;
+         max-width: 90vw; max-height: 85dvh; overflow-y: auto; box-shadow: var(--shadow); }
+.modal h2 { margin-bottom: 14px; font-size: 1rem; color: var(--accent); }
+.modal-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.modal-btn { flex: 1; padding: 12px; border: none; border-radius: var(--radius);
+             cursor: pointer; font-size: 0.85rem; font-weight: 700; color: #fff; }
+.modal-btn.cancel { background: #555; }
+.modal-btn.blue { background: var(--blue); }
+.modal-btn.green { background: var(--green); }
+.modal-btn.purple { background: var(--purple); }
+.modal-btn.red { background: var(--accent); }
+
+/* ── Occupied tables ── */
+.occ-table { background: var(--bg3); border-radius: var(--radius); padding: 12px;
+             margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between; }
+.occ-table:active { opacity: .7; }
+
+/* ── Report ── */
+.report-line { display: flex; justify-content: space-between; padding: 4px 0;
+               border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+
+/* ── Settings ── */
+.setting-group { margin-bottom: 14px; }
+.setting-group label { display: block; font-size: 0.8rem; color: var(--text2); margin-bottom: 4px; }
+.setting-group input { width: 100%; padding: 7px 10px; background: var(--bg3);
+                       border: 1px solid var(--border); border-radius: var(--radius);
+                       color: var(--text); font-size: 0.85rem; }
+
+/* ── Menu Editor ── */
+.me-item { display:flex; align-items:center; gap:6px; padding:6px 4px;
+           border-bottom:1px solid var(--border); }
+.me-name { flex:1; font-size:0.82rem; }
+.me-price { font-size:0.82rem; color:var(--accent); width:55px; text-align:right; }
+.me-edit-btn { background:var(--blue); border:none; color:#fff; width:28px; height:28px;
+               border-radius:4px; cursor:pointer; font-size:0.8rem; }
+.me-del-btn { background:var(--accent); border:none; color:#fff; width:28px; height:28px;
+              border-radius:4px; cursor:pointer; font-size:0.8rem; }
+
+/* ── Layout mode ── */
+#items-grid.layout-mode .item-btn { cursor: grab; position: relative; }
+#items-grid.layout-mode .item-btn:active { cursor: grabbing; }
+#items-grid.layout-mode .item-btn.drag-over { outline: 2px dashed var(--accent); }
+.item-btn.dragging { opacity: 0.4; }
+#layout-bar { display:none; position:sticky; bottom:0; background:var(--bg2);
+              padding:6px; gap:6px; flex-wrap:wrap; border-top:1px solid var(--border); }
+#layout-bar.active { display:flex; }
+.color-chip { width:28px; height:28px; border-radius:50%; border:2px solid transparent;
+              cursor:pointer; flex-shrink:0; }
+.color-chip.selected { border-color:#fff; transform:scale(1.2); }
+#layout-bar .lbtn { padding:6px 12px; border:none; border-radius:var(--radius);
+                    cursor:pointer; font-size:0.8rem; font-weight:700; color:#fff; }
+
+/* ── Plan de salle ── */
+#floorplan-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85);
+                     z-index:150; flex-direction:column; overflow-y:auto; }
+#floorplan-overlay.active { display:flex; }
+#floorplan-inner { padding:12px; flex:1; }
+#floorplan-header { display:flex; align-items:center; gap:8px; padding:10px 12px;
+                    background:var(--bg2); border-bottom:2px solid var(--accent); flex-shrink:0; }
+#floorplan-header h2 { color:var(--accent); font-size:1rem; flex:1; }
+.fp-close { background:var(--accent); border:none; color:#fff; padding:6px 14px;
+            border-radius:var(--radius); cursor:pointer; font-weight:700; }
+.fp-zone { margin-bottom:16px; }
+.fp-zone-title { font-size:0.8rem; font-weight:700; color:var(--text2); text-transform:uppercase;
+                 letter-spacing:.05em; margin-bottom:8px; padding-bottom:4px;
+                 border-bottom:1px solid var(--border); }
+.fp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(80px,1fr)); gap:8px; }
+.fp-table { border-radius:var(--radius); padding:10px 6px; cursor:pointer; text-align:center;
+            border:2px solid transparent; transition:transform .1s, opacity .1s;
+            display:flex; flex-direction:column; align-items:center; gap:3px; min-height:72px;
+            justify-content:center; }
+.fp-table:active { transform:scale(.93); }
+.fp-table.free { background:var(--bg3); border-color:var(--border); }
+.fp-table.free:hover { border-color:var(--text2); }
+.fp-table.occupied { background:#1a3a1a; border-color:var(--green); }
+.fp-table.occupied.long { background:#3a2a00; border-color:var(--yellow); }
+.fp-table.selected { border-color:#fff !important; box-shadow:0 0 0 2px #fff4; }
+.fp-table .fp-name { font-size:0.75rem; font-weight:700; color:var(--text); }
+.fp-table .fp-total { font-size:0.78rem; color:var(--green); font-weight:700; }
+.fp-table .fp-time { font-size:0.68rem; color:var(--yellow); }
+.fp-legend { display:flex; gap:12px; padding:8px 12px; background:var(--bg2);
+             border-top:1px solid var(--border); flex-shrink:0; flex-wrap:wrap; }
+.fp-legend span { font-size:0.72rem; color:var(--text2); display:flex; align-items:center; gap:4px; }
+.fp-legend i { width:12px; height:12px; border-radius:3px; display:inline-block; }
+
+/* ── Toast ── */
+#toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(60px);
+         background: var(--green); color: #fff; padding: 10px 20px; border-radius: 20px;
+         font-size: 0.85rem; transition: transform .3s; z-index: 200; }
+#toast.show { transform: translateX(-50%) translateY(0); }
+#toast.err { background: var(--accent); }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>🍽 POS</h1>
+  <button class="hbtn blue" id="btn-table" onclick="showFloorplan()">🪑 Table 1</button>
+  <button class="hbtn yellow" onclick="showSplitModal()">Partager</button>
+  <button class="hbtn purple" onclick="showReportModal()">Rapport</button>
+  <button class="hbtn green" onclick="showMenuEditor()">🍕 Menu</button>
+  <button class="hbtn yellow" id="btn-layout" onclick="toggleLayoutMode()">✦ Organiser</button>
+  <button class="hbtn red" onclick="showSettingsModal()">⚙</button>
+  <span id="ws-status">●</span>
+</div>
+
+<!-- Plan de salle -->
+<div id="floorplan-overlay">
+  <div id="floorplan-header">
+    <h2>🪑 Plan de salle</h2>
+    <button class="fp-close" onclick="closeFloorplan()">✕ Fermer</button>
+  </div>
+  <div id="floorplan-inner"></div>
+  <div class="fp-legend">
+    <span><i style="background:var(--bg3);border:1px solid var(--border)"></i> Libre</span>
+    <span><i style="background:#1a3a1a;border:1px solid var(--green)"></i> Occupée</span>
+    <span><i style="background:#3a2a00;border:1px solid var(--yellow)"></i> &gt;1h</span>
+  </div>
+</div>
+
+<div id="main">
+  <div id="menu-panel">
+    <div id="cat-tabs"></div>
+    <div id="items-grid"></div>
+    <div id="layout-bar">
+      <span style="font-size:0.78rem;color:var(--text2);align-self:center">Couleur :</span>
+    </div>
+  </div>
+  <div id="order-panel">
+    <div id="order-header">
+      <span id="order-table-label">Table 1</span>
+      <button style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:0.8rem"
+              onclick="clearOrder()">✕ Vider</button>
+    </div>
+    <div id="order-list"></div>
+    <div id="order-total">Total : 0,00 €</div>
+    <div id="payment-area">
+      <div class="pay-row">
+        <button class="pay-btn especes" onclick="pay('Espèces')">💶 Espèces</button>
+        <button class="pay-btn cb" onclick="pay('CB')">💳 CB</button>
+        <button class="pay-btn ticket" onclick="pay('Ticket restaurant')">🎟 TR</button>
+      </div>
+      <button class="pay-btn" style="background:var(--purple)" onclick="pay(null)">🔀 Mixte</button>
+      <button id="print-btn" onclick="showPrintModal()">🖨 Imprimer ticket</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = '';
+let menu = {}, config = {}, currentTable = '', tables = [], layout = {}, occupied = [];
+let ws, wsReconnectTimer;
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  [menu, config, tables] = await Promise.all([
+    fetch(`${API}/api/menu`).then(r => r.json()),
+    fetch(`${API}/api/config`).then(r => r.json()),
+    fetch(`${API}/api/tables`).then(r => r.json()),
+  ]);
+  layout = await fetch(`${API}/api/layout`).then(r => r.json());
+  occupied = await fetch(`${API}/api/occupied`).then(r => r.json());
+  currentTable = tables[0];
+  document.getElementById('btn-table').textContent = '🪑 ' + currentTable;
+  buildMenu();
+  await refreshOrder();
+  connectWS();
+  initLayoutBar();
+}
+
+// ── WebSocket ─────────────────────────────────────────────────────────────────
+function connectWS() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/ws`);
+  ws.onopen = () => {
+    document.getElementById('ws-status').textContent = '●';
+    document.getElementById('ws-status').className = 'ok';
+  };
+  ws.onclose = () => {
+    document.getElementById('ws-status').className = '';
+    wsReconnectTimer = setTimeout(connectWS, 3000);
+  };
+  ws.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'order_update' && msg.table === currentTable) renderOrder(msg.order);
+    if (msg.type === 'payment_done' && msg.table === currentTable) toast(`✔ Paiement ${msg.method} — ${fmt(msg.total)}`);
+    if (msg.type === 'tables_update') { occupied = msg.occupied; renderFloorplan(); }
+  };
+}
+
+// ── Plan de salle ─────────────────────────────────────────────────────────────
+function showFloorplan() {
+  renderFloorplan();
+  document.getElementById('floorplan-overlay').classList.add('active');
+}
+function closeFloorplan() {
+  document.getElementById('floorplan-overlay').classList.remove('active');
+}
+
+function renderFloorplan() {
+  const inner = document.getElementById('floorplan-inner');
+  if (!inner) return;
+  const occMap = {};
+  occupied.forEach(o => { occMap[o.table] = o; });
+
+  // group tables by zone
+  const zones = config.zones || [{name:'Salle', count: tables.filter(t=>!['À emporter','Comptoir'].includes(t)).length}];
+  let html = '';
+  for (const zone of zones) {
+    const zoneTables = tables.filter(t => t.startsWith(zone.name + ' ') && !isNaN(t.split(' ').pop()));
+    if (!zoneTables.length) continue;
+    html += `<div class="fp-zone"><div class="fp-zone-title">${zone.name}</div><div class="fp-grid">`;
+    for (const t of zoneTables) {
+      html += fpTableHtml(t, occMap[t]);
+    }
+    html += `</div></div>`;
+  }
+  // special tables
+  const specials = tables.filter(t => ['À emporter','Comptoir'].includes(t));
+  if (specials.length) {
+    html += `<div class="fp-zone"><div class="fp-zone-title">Autres</div><div class="fp-grid">`;
+    specials.forEach(t => { html += fpTableHtml(t, occMap[t]); });
+    html += `</div></div>`;
+  }
+  inner.innerHTML = html;
+}
+
+function fpTableHtml(name, occ) {
+  let cls = 'fp-table free';
+  let extra = '';
+  if (occ) {
+    const mins = Math.floor((Date.now() - new Date(occ.opened_at)) / 60000);
+    const isLong = mins >= 60;
+    cls = `fp-table occupied${isLong ? ' long' : ''}`;
+    const timeStr = mins < 60 ? `${mins}mn` : `${Math.floor(mins/60)}h${String(mins%60).padStart(2,'0')}`;
+    extra = `<span class="fp-total">${fmt(occ.total)}</span><span class="fp-time">${timeStr}</span>`;
+  }
+  if (name === currentTable) cls += ' selected';
+  return `<div class="${cls}" onclick="selectTable('${esc(name)}')" title="${name}">
+    <span class="fp-name">${name}</span>${extra}
+  </div>`;
+}
+
+async function selectTable(name) {
+  currentTable = name;
+  document.getElementById('btn-table').textContent = '🪑 ' + name;
+  document.getElementById('order-table-label').textContent = name;
+  closeFloorplan();
+  await refreshOrder();
+  renderFloorplan();
+}
+
+
+// ── Menu ──────────────────────────────────────────────────────────────────────
+function buildMenu() {
+  const cats = Object.keys(menu);
+  const tabs = document.getElementById('cat-tabs');
+  tabs.innerHTML = cats.map((c, i) =>
+    `<button class="cat-tab${i===0?' active':''}" onclick="selectCat('${c}', this)">${c}</button>`
+  ).join('');
+  if (cats.length) { _currentCat = cats[0]; renderItems(cats[0]); }
+}
+function selectCat(cat, btn) {
+  document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _currentCat = cat;
+  renderItems(cat);
+}
+function renderItems(cat) {
+  const section = menu[cat];
+  const grid = document.getElementById('items-grid');
+  const catLayout = layout[cat] || {};
+  const allNames = Object.keys(section.items);
+  // sort by saved order, unsaved items go to end
+  const ordered = allNames.slice().sort((a, b) => {
+    const oa = catLayout[a]?.order ?? 9999;
+    const ob = catLayout[b]?.order ?? 9999;
+    return oa - ob;
+  });
+  grid.innerHTML = ordered.map(name => {
+    const price = section.items[name];
+    const bg = catLayout[name]?.color || '';
+    const style = bg ? `background:${bg};border-color:${bg};` : '';
+    return `<button class="item-btn" data-name="${esc(name)}" style="${style}"
+        onclick="addItem('${esc(name)}',${price},${section.tva_rate},'${esc(section.category)}')">
+      <span class="name">${name}</span>
+      <span class="price">${fmt(price)}</span>
+    </button>`;
+  }).join('');
+  if (layoutMode) enableDrag(cat);
+}
+
+// ── Order ─────────────────────────────────────────────────────────────────────
+async function refreshOrder() {
+  const order = await fetch(`${API}/api/order/${enc(currentTable)}`).then(r => r.json());
+  renderOrder(order);
+}
+function renderOrder(order) {
+  const list = document.getElementById('order-list');
+  if (!order.items.length) {
+    list.innerHTML = '<p style="color:var(--text2);text-align:center;padding:20px;font-size:0.85rem">Commande vide</p>';
+  } else {
+    list.innerHTML = order.items.map(i => `
+      <div class="order-item">
+        <span class="oi-name">${i.name}</span>
+        <button class="qty-btn" onclick="updateQty('${esc(i.name)}',-1)">-</button>
+        <span class="oi-qty">${i.quantity}</span>
+        <button class="qty-btn" onclick="updateQty('${esc(i.name)}',1)">+</button>
+        <span class="oi-price">${fmt(i.price * i.quantity)}</span>
+        <button class="oi-del" onclick="removeItem('${esc(i.name)}')">✕</button>
+      </div>`).join('');
+  }
+  document.getElementById('order-total').textContent = `Total : ${fmt(order.total)}`;
+}
+
+async function addItem(name, price, tva_rate, category) {
+  await api('POST', `/api/order/${enc(currentTable)}/add`, {name, price, tva_rate, category});
+}
+async function updateQty(name, delta) {
+  await api('POST', `/api/order/${enc(currentTable)}/qty`, {name, delta});
+}
+async function removeItem(name) {
+  await api('POST', `/api/order/${enc(currentTable)}/remove`, {name});
+}
+async function clearOrder() {
+  const order = await fetch(`${API}/api/order/${enc(currentTable)}`).then(r => r.json());
+  if (!order.items.length) return;
+  if (!confirm('Vider la commande ?')) return;
+  await api('DELETE', `/api/order/${enc(currentTable)}`);
+}
+
+// ── Payment ───────────────────────────────────────────────────────────────────
+async function pay(method) {
+  const order = await fetch(`${API}/api/order/${enc(currentTable)}`).then(r => r.json());
+  if (!order.items.length) { toast('Commande vide', true); return; }
+  showPaymentModal(order.total, method);
+}
+
+function showPaymentModal(total, preMethod) {
+  let payments = preMethod ? [{method: preMethod, amount: total}] : [];
+  let remaining = total;
+
+  function renderPayModal() {
+    const paid = payments.reduce((s, p) => s + p.amount, 0);
+    remaining = Math.max(0, round2(total - paid));
+    const rows = payments.map((p, i) => `
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <span style="flex:1;font-size:0.85rem">${p.method}</span>
+        <span style="font-weight:700;color:var(--green)">${fmt(p.amount)}</span>
+        <button onclick="removePayment(${i})" style="background:var(--accent);border:none;color:#fff;width:26px;height:26px;border-radius:4px;cursor:pointer">✕</button>
+      </div>`).join('');
+
+    const restHtml = remaining > 0 ? `
+      <div style="background:var(--bg3);border-radius:var(--radius);padding:10px;margin-bottom:10px">
+        <div style="font-size:0.8rem;color:var(--text2);margin-bottom:6px">Reste à payer : <strong style="color:var(--accent)">${fmt(remaining)}</strong></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+          ${['Espèces','CB','Ticket restaurant'].map(m =>
+            `<button onclick="addPayment('${m}')" style="flex:1;min-width:80px;padding:8px;border:none;border-radius:var(--radius);cursor:pointer;font-weight:700;font-size:0.78rem;color:#fff;background:${m==='Espèces'?'var(--green)':m==='CB'?'var(--blue)':'var(--yellow);color:#333'}">${m}</button>`
+          ).join('')}
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input id="pay-custom-amount" type="number" step="0.01" min="0.01" max="${remaining}" value="${remaining}"
+            style="flex:1;padding:6px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text)">
+          <select id="pay-custom-method" style="flex:1;padding:6px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text)">
+            <option>Espèces</option><option>CB</option><option>Ticket restaurant</option>
+          </select>
+          <button onclick="addCustomPayment()" style="padding:6px 10px;background:var(--purple);border:none;color:#fff;border-radius:var(--radius);cursor:pointer;font-weight:700">+</button>
+        </div>
+      </div>` : `<div style="color:var(--green);font-weight:700;text-align:center;padding:8px;margin-bottom:10px">✔ Montant complet</div>`;
+
+    modal(`<h2>💳 Paiement — ${fmt(total)}</h2>
+      ${rows}
+      ${restHtml}
+      <div class="modal-row">
+        <button class="modal-btn green" ${remaining > 0 ? 'disabled style="opacity:0.4"' : ''} onclick="confirmPayment(${total})">✔ Valider</button>
+        <button class="modal-btn cancel" onclick="closeModal()">Annuler</button>
+      </div>`);
+
+    // rebind closures
+    window._payState = {payments, total, remaining, renderPayModal};
+  }
+
+  window.addPayment = (method) => {
+    const amt = round2(window._payState.remaining);
+    if (amt <= 0) return;
+    window._payState.payments.push({method, amount: amt});
+    payments = window._payState.payments;
+    window._payState.renderPayModal();
+  };
+  window.addCustomPayment = () => {
+    const amt = round2(parseFloat(document.getElementById('pay-custom-amount')?.value) || 0);
+    const method = document.getElementById('pay-custom-method')?.value || 'Espèces';
+    if (amt <= 0 || amt > window._payState.remaining + 0.001) { toast('Montant invalide', true); return; }
+    window._payState.payments.push({method, amount: amt});
+    payments = window._payState.payments;
+    window._payState.renderPayModal();
+  };
+  window.removePayment = (i) => {
+    window._payState.payments.splice(i, 1);
+    payments = window._payState.payments;
+    window._payState.renderPayModal();
+  };
+
+  renderPayModal();
+}
+
+function round2(v) { return Math.round(v * 100) / 100; }
+
+async function confirmPayment(total) {
+  const {payments} = window._payState;
+  if (!payments.length) return;
+  const res = await api('POST', `/api/order/${enc(currentTable)}/pay`, {payments});
+  if (res?.ok) {
+    closeModal();
+    toast(`✔ Paiement ${fmt(res.total)}`);
+  }
+}
+
+// ── Print ─────────────────────────────────────────────────────────────────────
+function showPrintModal() {
+  modal(`<h2>🖨 Type de ticket</h2>
+    <div class="modal-row">
+      <button class="modal-btn blue" onclick="printTicket('client');closeModal()">🎫 Client</button>
+      <button class="modal-btn" style="background:var(--yellow);color:#333"
+              onclick="printTicket('cuisine');closeModal()">👨‍🍳 Cuisine</button>
+    </div>
+    <div class="modal-row">
+      <button class="modal-btn purple" onclick="printTicket('both');closeModal()">📋 Les deux</button>
+      <button class="modal-btn cancel" onclick="closeModal()">Annuler</button>
+    </div>`);
+}
+async function printTicket(target) {
+  const res = await api('POST', `/api/order/${enc(currentTable)}/print`, {target});
+  if (res?.ok) toast(`✔ Ticket n°${String(res.ticket_number).padStart(6,'0')}${res.duplicate?' (DUP)':''}`);
+}
+
+// ── Occupied tables — remplacé par plan de salle ──────────────────────────────
+function gotoTable(t) { selectTable(t); }
+
+// ── Split ─────────────────────────────────────────────────────────────────────
+function showSplitModal() {
+  modal(`<h2>Partager la note</h2>
+    <div class="modal-row">
+      ${[2,3,4].map(n => `<button class="modal-btn blue" onclick="doSplit(${n})">${n} parts</button>`).join('')}
+    </div>
+    <div class="modal-row"><button class="modal-btn cancel" onclick="closeModal()">Annuler</button></div>`);
+}
+async function doSplit(n) {
+  closeModal();
+  const res = await api('POST', `/api/order/${enc(currentTable)}/split`, {n});
+  if (res?.ok) { toast(`✔ Note partagée en ${n}`); await refreshOrder(); }
+}
+
+// ── Report ────────────────────────────────────────────────────────────────────
+async function showReportModal() {
+  const s = await fetch(`${API}/api/sales/today`).then(r => r.json());
+  const lines = [
+    ['Date', s.date], ['Transactions', s.nombre_transactions],
+    ['Total HT', fmt(s.total_ventes_ht)], ['TVA', fmt(s.total_tva)],
+    ['Total TTC', fmt(s.total_ventes_ttc)],
+  ];
+  const payLines = Object.entries(s.ventes_par_moyen_paiement||{})
+    .map(([m,v]) => `<div class="report-line"><span>${m}</span><span>${fmt(v)}</span></div>`).join('');
+  modal(`<h2>📊 Rapport du jour</h2>
+    ${lines.map(([k,v]) => `<div class="report-line"><span>${k}</span><span>${v}</span></div>`).join('')}
+    ${payLines ? '<hr style="margin:8px 0;border-color:var(--border)">'+payLines : ''}
+    <div class="modal-row" style="margin-top:12px">
+      <button class="modal-btn red" onclick="doZReport()">Clôturer (Z)</button>
+      <button class="modal-btn cancel" onclick="closeModal()">Fermer</button>
+    </div>`);
+}
+async function doZReport() {
+  if (!confirm('Générer le rapport Z et remettre les compteurs à zéro ?')) return;
+  closeModal();
+  const res = await api('POST', '/api/sales/z_report');
+  toast(`✔ Rapport Z n°${res.numero_rapport}`);
+}
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+async function showSettingsModal() {
+  const cfg = await fetch(`${API}/api/config`).then(r => r.json());
+  const fields = [
+    ['restaurant_name','Nom'], ['restaurant_address','Adresse'],
+    ['restaurant_city','Ville'], ['restaurant_siret','SIRET'],
+    ['ticket_message','Message ticket'],
+  ];
+  const inputs = fields.map(([k,l]) =>
+    `<div class="setting-group"><label>${l}</label>
+     <input id="cfg_${k}" value="${cfg[k]||''}"></div>`).join('');
+
+  const zones = cfg.zones || [{name:'Salle',count:20}];
+  const zonesHtml = zones.map((z, i) => `
+    <div class="zone-row" id="zone-row-${i}" style="display:flex;gap:6px;margin-bottom:6px;align-items:center">
+      <input id="zone_name_${i}" value="${z.name}" placeholder="Nom zone"
+        style="flex:2;padding:6px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text)">
+      <input id="zone_count_${i}" type="number" value="${z.count}" min="0" placeholder="Nb"
+        style="flex:1;padding:6px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text)">
+      <button onclick="removeZoneRow(${i})" style="background:var(--accent);border:none;color:#fff;width:28px;height:28px;border-radius:4px;cursor:pointer">✕</button>
+    </div>`).join('');
+
+  modal(`<h2>⚙ Paramètres</h2>
+    ${inputs}
+    <hr style="margin:10px 0;border-color:var(--border)">
+    <div style="font-weight:700;margin-bottom:8px;font-size:0.85rem">Zones & Tables</div>
+    <div id="zones-container">${zonesHtml}</div>
+    <button onclick="addZoneRow()" style="width:100%;padding:8px;background:var(--bg3);border:1px dashed var(--border);border-radius:var(--radius);color:var(--text2);cursor:pointer;margin-bottom:10px">+ Ajouter une zone</button>
+    <div class="modal-row">
+      <button class="modal-btn green" onclick="saveSettings()">Enregistrer</button>
+      <button class="modal-btn cancel" onclick="closeModal()">Annuler</button>
+    </div>
+    <hr style="margin:10px 0;border-color:var(--border)">
+    <button class="modal-btn blue" style="width:100%;margin-bottom:6px" onclick="closeModal();showPrinterSettings()">Imprimantes</button>
+    <button class="modal-btn" style="background:#e67e22;color:#fff;width:100%" onclick="resetTickets()">Remise à zéro tickets</button>`);
+}
+
+function addZoneRow() {
+  const container = document.getElementById('zones-container');
+  const i = container.querySelectorAll('.zone-row').length;
+  const div = document.createElement('div');
+  div.className = 'zone-row';
+  div.id = `zone-row-${i}`;
+  div.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:center';
+  div.innerHTML = `
+    <input id="zone_name_${i}" value="" placeholder="Nom zone"
+      style="flex:2;padding:6px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text)">
+    <input id="zone_count_${i}" type="number" value="10" min="0" placeholder="Nb"
+      style="flex:1;padding:6px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text)">
+    <button onclick="removeZoneRow(${i})" style="background:var(--accent);border:none;color:#fff;width:28px;height:28px;border-radius:4px;cursor:pointer">✕</button>`;
+  container.appendChild(div);
+}
+
+function removeZoneRow(i) {
+  document.getElementById(`zone-row-${i}`)?.remove();
+}
+
+async function saveSettings() {
+  const fieldKeys = ['restaurant_name','restaurant_address','restaurant_city','restaurant_siret','ticket_message'];
+  const config = {};
+  fieldKeys.forEach(k => {
+    const el = document.getElementById(`cfg_${k}`);
+    if (el) config[k] = el.value;
+  });
+  // collect zones
+  const rows = document.querySelectorAll('.zone-row');
+  const zones = [];
+  rows.forEach(row => {
+    const idx = row.id.replace('zone-row-','');
+    const name  = document.getElementById(`zone_name_${idx}`)?.value?.trim();
+    const count = parseInt(document.getElementById(`zone_count_${idx}`)?.value) || 0;
+    if (name) zones.push({name, count});
+  });
+  config.zones = zones;
+  await api('POST', '/api/config/save', {config});
+  closeModal(); toast('✔ Config enregistrée');
+  [tables, config] = await Promise.all([
+    fetch(`${API}/api/tables`).then(r => r.json()),
+    fetch(`${API}/api/config`).then(r => r.json()),
+  ]);
+}
+async function showPrinterSettings() {
+  const pcfg = await fetch(`${API}/api/printer_config`).then(r => r.json());
+  const printers = [
+    ['receipt_printer', 'Caisse'],
+    ['kitchen_printer', 'Cuisine'],
+    ['bar_printer',     'Bar'],
+  ];
+  const sections = printers.map(([key, label]) => {
+    const p = pcfg[key] || {};
+    return `
+      <div style="margin-bottom:12px">
+        <div style="font-weight:700;color:var(--accent);margin-bottom:6px">${label}</div>
+        <div class="setting-group">
+          <label>Activée</label>
+          <select id="p_${key}_enabled" style="width:100%;padding:7px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text)">
+            <option value="true" ${p.enabled?'selected':''}>Oui</option>
+            <option value="false" ${!p.enabled?'selected':''}>Non</option>
+          </select>
+        </div>
+        <div class="setting-group"><label>IP</label><input id="p_${key}_ip" value="${p.ip||''}"></div>
+        <div class="setting-group"><label>Port</label><input id="p_${key}_port" value="${p.port||9100}"></div>
+      </div>`;
+  }).join('<hr style="margin:8px 0;border-color:var(--border)">');
+  modal(`<h2>🖨 Imprimantes</h2>${sections}
+    <div class="modal-row">
+      <button class="modal-btn green" onclick="savePrinterSettings()">Enregistrer</button>
+      <button class="modal-btn cancel" onclick="closeModal()">Annuler</button>
+    </div>`);
+}
+async function savePrinterSettings() {
+  const keys = ['receipt_printer','kitchen_printer','bar_printer'];
+  const config = {};
+  for (const key of keys) {
+    config[key] = {
+      enabled: document.getElementById(`p_${key}_enabled`).value === 'true',
+      ip:      document.getElementById(`p_${key}_ip`).value,
+      port:    parseInt(document.getElementById(`p_${key}_port`).value) || 9100,
+      timeout: 5,
+    };
+  }
+  await api('POST', '/api/config/printer/save', {config});
+  closeModal(); toast('✔ Imprimantes enregistrées');
+}
+async function resetTickets() {
+  if (!confirm('Remettre les tickets à zéro ?')) return;
+  await api('POST', '/api/tickets/reset');
+  closeModal(); toast('✔ Tickets remis à zéro');
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function fmt(v) { return Number(v||0).toLocaleString('fr-FR',{style:'currency',currency:'EUR'}); }
+function enc(t) { return encodeURIComponent(t); }
+function esc(s) { return s.replace(/'/g,"\\'"); }
+
+async function api(method, path, body) {
+  try {
+    const res = await fetch(`${API}${path}`, {
+      method, headers: {'Content-Type': 'application/json'},
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) { const e = await res.json().catch(()=>{}); toast(e?.detail||'Erreur', true); return null; }
+    const data = await res.json();
+    if (!ws || ws.readyState !== WebSocket.OPEN) await refreshOrder();
+    return data;
+  } catch(e) { toast('Réseau : ' + e.message, true); return null; }
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function modal(html) {
+  closeModal();
+  const ov = document.createElement('div');
+  ov.className = 'modal-overlay'; ov.id = 'modal-overlay';
+  ov.innerHTML = `<div class="modal">${html}</div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) closeModal(); });
+  document.body.appendChild(ov);
+}
+function closeModal() {
+  document.getElementById('modal-overlay')?.remove();
+}
+
+function toast(msg, err=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = err ? 'err' : '';
+  void t.offsetWidth; t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── Layout mode ───────────────────────────────────────────────────────────────
+const COLORS = ['','#1a5276','#145a32','#78281f','#4a235a','#784212',
+                '#1b4f72','#0e6655','#922b21','#6c3483','#d35400','#1c2833'];
+const COLOR_LABELS = ['Défaut','Bleu','Vert','Rouge','Violet','Brun',
+                      'Bleu clair','Émeraude','Carmin','Mauve','Orange','Ardoise'];
+let layoutMode = false;
+let selectedColor = '';
+let _currentCat = '';
+
+function initLayoutBar() {
+  const bar = document.getElementById('layout-bar');
+  COLORS.forEach((c, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'color-chip' + (i === 0 ? ' selected' : '');
+    chip.style.background = c || 'var(--bg3)';
+    chip.style.border = c ? `2px solid ${c}` : '2px solid var(--border)';
+    chip.title = COLOR_LABELS[i];
+    chip.onclick = () => {
+      selectedColor = c;
+      document.querySelectorAll('.color-chip').forEach(ch => ch.classList.remove('selected'));
+      chip.classList.add('selected');
+    };
+    bar.appendChild(chip);
+  });
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'lbtn'; saveBtn.style.background = 'var(--green)';
+  saveBtn.textContent = '💾 Enregistrer'; saveBtn.onclick = saveLayout;
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'lbtn'; cancelBtn.style.background = '#555';
+  cancelBtn.textContent = 'Annuler'; cancelBtn.onclick = () => { layoutMode = false; applyLayoutMode(); };
+  bar.appendChild(saveBtn); bar.appendChild(cancelBtn);
+}
+
+function toggleLayoutMode() {
+  layoutMode = !layoutMode;
+  applyLayoutMode();
+}
+
+function applyLayoutMode() {
+  const grid = document.getElementById('items-grid');
+  const bar  = document.getElementById('layout-bar');
+  const btn  = document.getElementById('btn-layout');
+  if (layoutMode) {
+    grid.classList.add('layout-mode');
+    bar.classList.add('active');
+    btn.style.background = 'var(--accent)';
+    btn.textContent = '✦ Mode édition';
+    enableDrag(_currentCat);
+  } else {
+    grid.classList.remove('layout-mode');
+    bar.classList.remove('active');
+    btn.style.background = '';
+    btn.textContent = '✦ Organiser';
+    disableDrag();
+  }
+}
+
+function enableDrag(cat) {
+  const grid = document.getElementById('items-grid');
+  let dragSrc = null;
+  let touchClone = null;
+  let touchOffX = 0, touchOffY = 0;
+
+  grid.querySelectorAll('.item-btn').forEach(btn => {
+    btn.draggable = true;
+    let _didDrag = false;
+
+    // ── color tap (short press, no move) ──
+    btn.onclick = (e) => {
+      if (!layoutMode) return;
+      if (_didDrag) { _didDrag = false; return; }
+      e.stopPropagation();
+      const name = btn.dataset.name;
+      if (!layout[cat]) layout[cat] = {};
+      if (!layout[cat][name]) layout[cat][name] = {};
+      layout[cat][name].color = selectedColor;
+      btn.style.background = selectedColor || '';
+      btn.style.borderColor = selectedColor || '';
+    };
+
+    // ── Desktop drag ──
+    btn.addEventListener('dragstart', e => {
+      _didDrag = true;
+      dragSrc = btn;
+      btn.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    btn.addEventListener('dragend', () => {
+      btn.classList.remove('dragging');
+      grid.querySelectorAll('.item-btn').forEach(b => b.classList.remove('drag-over'));
+    });
+    btn.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (btn !== dragSrc) btn.classList.add('drag-over');
+    });
+    btn.addEventListener('dragleave', () => btn.classList.remove('drag-over'));
+    btn.addEventListener('drop', e => {
+      e.preventDefault();
+      if (btn === dragSrc) return;
+      btn.classList.remove('drag-over');
+      const btns = [...grid.querySelectorAll('.item-btn')];
+      const srcIdx = btns.indexOf(dragSrc);
+      const dstIdx = btns.indexOf(btn);
+      if (srcIdx < dstIdx) grid.insertBefore(dragSrc, btn.nextSibling);
+      else grid.insertBefore(dragSrc, btn);
+      saveOrderFromDOM(cat);
+    });
+
+    // ── Touch drag ──
+    btn.addEventListener('touchstart', e => {
+      if (!layoutMode) return;
+      dragSrc = btn;
+      const t = e.touches[0];
+      const rect = btn.getBoundingClientRect();
+      touchOffX = t.clientX - rect.left;
+      touchOffY = t.clientY - rect.top;
+
+      touchClone = btn.cloneNode(true);
+      touchClone.style.cssText = `
+        position:fixed; z-index:999; pointer-events:none; opacity:0.85;
+        width:${rect.width}px; height:${rect.height}px;
+        left:${rect.left}px; top:${rect.top}px;
+        border-radius:var(--radius); transition:none;`;
+      document.body.appendChild(touchClone);
+      btn.classList.add('dragging');
+    }, {passive: true});
+
+    btn.addEventListener('touchmove', e => {
+      if (!dragSrc || !touchClone) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      touchClone.style.left = (t.clientX - touchOffX) + 'px';
+      touchClone.style.top  = (t.clientY - touchOffY) + 'px';
+
+      // find element under finger (excluding clone)
+      touchClone.style.display = 'none';
+      const under = document.elementFromPoint(t.clientX, t.clientY);
+      touchClone.style.display = '';
+
+      grid.querySelectorAll('.item-btn').forEach(b => b.classList.remove('drag-over'));
+      const target = under?.closest('.item-btn');
+      if (target && target !== dragSrc) target.classList.add('drag-over');
+    }, {passive: false});
+
+    btn.addEventListener('touchend', e => {
+      if (!dragSrc || !touchClone) return;
+      const t = e.changedTouches[0];
+
+      touchClone.style.display = 'none';
+      const under = document.elementFromPoint(t.clientX, t.clientY);
+      touchClone.remove(); touchClone = null;
+
+      dragSrc.classList.remove('dragging');
+      grid.querySelectorAll('.item-btn').forEach(b => b.classList.remove('drag-over'));
+
+      const target = under?.closest('.item-btn');
+      if (target && target !== dragSrc) {
+        const btns = [...grid.querySelectorAll('.item-btn')];
+        const srcIdx = btns.indexOf(dragSrc);
+        const dstIdx = btns.indexOf(target);
+        if (srcIdx < dstIdx) grid.insertBefore(dragSrc, target.nextSibling);
+        else grid.insertBefore(dragSrc, target);
+        saveOrderFromDOM(cat);
+      }
+      dragSrc = null;
+    }, {passive: true});
+  });
+}
+
+function disableDrag() {
+  document.querySelectorAll('.item-btn').forEach(btn => {
+    btn.draggable = false;
+  });
+}
+
+function saveOrderFromDOM(cat) {
+  const grid = document.getElementById('items-grid');
+  if (!layout[cat]) layout[cat] = {};
+  [...grid.querySelectorAll('.item-btn')].forEach((btn, idx) => {
+    const name = btn.dataset.name;
+    if (!layout[cat][name]) layout[cat][name] = {};
+    layout[cat][name].order = idx;
+  });
+}
+
+async function saveLayout() {
+  const res = await api('POST', '/api/layout/save', {layout});
+  if (res?.ok) {
+    layoutMode = false;
+    applyLayoutMode();
+    toast('✔ Disposition enregistrée');
+  }
+}
+
+// ── Menu Editor ───────────────────────────────────────────────────────────────
+let _editMenu = null;
+let _editCat  = null;
+
+async function showMenuEditor() {
+  _editMenu = JSON.parse(JSON.stringify(menu)); // deep copy
+  _editCat  = Object.keys(_editMenu)[0] || null;
+  renderMenuEditor();
+}
+
+function renderMenuEditor() {
+  const cats = Object.keys(_editMenu);
+  const catTabs = cats.map(c =>
+    `<button class="cat-tab${c===_editCat?' active':''}" onclick="meSelectCat('${esc(c)}')">${c}</button>`
+  ).join('');
+
+  let itemsHtml = '';
+  if (_editCat && _editMenu[_editCat]) {
+    const sec = _editMenu[_editCat];
+    itemsHtml = Object.entries(sec.items).map(([name, price]) => `
+      <div class="me-item">
+        <span class="me-name">${name}</span>
+        <span class="me-price">${fmt(price)}</span>
+        <button class="me-edit-btn" onclick="meEditItem('${esc(name)}')">✏</button>
+        <button class="me-del-btn" onclick="meDeleteItem('${esc(name)}')">✕</button>
+      </div>`).join('');
+  }
+
+  const catMeta = _editCat ? `
+    <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+      <div style="flex:1;min-width:80px">
+        <div style="font-size:0.75rem;color:var(--text2);margin-bottom:3px">TVA %</div>
+        <input id="me_tva" type="number" value="${_editMenu[_editCat]?.tva_rate??10}"
+          style="width:100%;padding:6px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text)">
+      </div>
+      <div style="flex:2;min-width:120px">
+        <div style="font-size:0.75rem;color:var(--text2);margin-bottom:3px">Catégorie impression</div>
+        <select id="me_category" style="width:100%;padding:6px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text)">
+          ${['alimentation','alcool','boisson sans alcool','Bieres','emporte'].map(c =>
+            `<option${_editMenu[_editCat]?.category===c?' selected':''}>${c}</option>`).join('')}
+        </select>
+      </div>
+    </div>` : '';
+
+  modal(`<h2>🍕 Éditeur de menu</h2>
+    <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+      <div style="overflow-x:auto;display:flex;gap:4px;flex:1">${catTabs}</div>
+      <button class="modal-btn blue" style="flex:none;padding:6px 10px;font-size:0.78rem" onclick="meAddCat()">+ Catégorie</button>
+      ${_editCat ? `<button class="modal-btn red" style="flex:none;padding:6px 10px;font-size:0.78rem" onclick="meDeleteCat()">🗑</button>` : ''}
+    </div>
+    ${catMeta}
+    <div id="me-items" style="max-height:280px;overflow-y:auto;margin-bottom:8px">${itemsHtml||'<p style="color:var(--text2);font-size:0.82rem">Aucun article</p>'}</div>
+    <button class="modal-btn green" style="width:100%;margin-bottom:8px" onclick="meAddItem()">+ Article</button>
+    <div class="modal-row">
+      <button class="modal-btn green" onclick="meSave()">💾 Enregistrer</button>
+      <button class="modal-btn cancel" onclick="closeModal()">Annuler</button>
+    </div>`);
+}
+
+function meSelectCat(cat) {
+  if (_editCat) _meSaveCatMeta();
+  _editCat = cat;
+  renderMenuEditor();
+}
+
+function _meSaveCatMeta() {
+  if (!_editCat) return;
+  const tva = parseFloat(document.getElementById('me_tva')?.value) || 10;
+  const cat = document.getElementById('me_category')?.value || 'alimentation';
+  _editMenu[_editCat].tva_rate = tva;
+  _editMenu[_editCat].category = cat;
+}
+
+function meAddCat() {
+  const name = prompt('Nom de la nouvelle catégorie :');
+  if (!name || !name.trim()) return;
+  _editMenu[name.trim()] = {tva_rate: 10, category: 'alimentation', items: {}};
+  _editCat = name.trim();
+  renderMenuEditor();
+}
+
+function meDeleteCat() {
+  if (!_editCat) return;
+  if (!confirm(`Supprimer la catégorie "${_editCat}" et tous ses articles ?`)) return;
+  delete _editMenu[_editCat];
+  _editCat = Object.keys(_editMenu)[0] || null;
+  renderMenuEditor();
+}
+
+function meAddItem() {
+  if (!_editCat) return;
+  _meSaveCatMeta();
+  const name = prompt('Nom de l\'article :');
+  if (!name || !name.trim()) return;
+  const priceStr = prompt('Prix (€) :');
+  const price = parseFloat(priceStr);
+  if (isNaN(price) || price < 0) { alert('Prix invalide'); return; }
+  _editMenu[_editCat].items[name.trim()] = price;
+  renderMenuEditor();
+}
+
+function meEditItem(name) {
+  _meSaveCatMeta();
+  const cur = _editMenu[_editCat].items[name];
+  const newName = prompt('Nom :', name);
+  if (!newName || !newName.trim()) return;
+  const priceStr = prompt('Prix (€) :', cur);
+  const price = parseFloat(priceStr);
+  if (isNaN(price) || price < 0) { alert('Prix invalide'); return; }
+  delete _editMenu[_editCat].items[name];
+  _editMenu[_editCat].items[newName.trim()] = price;
+  renderMenuEditor();
+}
+
+function meDeleteItem(name) {
+  if (!confirm(`Supprimer "${name}" ?`)) return;
+  delete _editMenu[_editCat].items[name];
+  renderMenuEditor();
+}
+
+async function meSave() {
+  _meSaveCatMeta();
+  const res = await api('POST', '/api/menu/save', {menu: _editMenu});
+  if (res?.ok) {
+    menu = _editMenu;
+    buildMenu();
+    closeModal();
+    toast('✔ Menu enregistré');
+  }
+}
+
+init();
+</script>
+</body>
+</html>

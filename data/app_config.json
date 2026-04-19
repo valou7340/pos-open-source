@@ -1,0 +1,13 @@
+{
+  "restaurant_name": "Mon Restaurant",
+  "restaurant_address": "",
+  "restaurant_city": "",
+  "restaurant_siret": "",
+  "restaurant_phone": "",
+  "ticket_message": "Merci pour votre visite !",
+  "auto_print_kitchen": true,
+  "zones": [
+    {"name": "Salle", "count": 10},
+    {"name": "Terrasse", "count": 10}
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "Plats": {
+    "tva_rate": 10,
+    "category": "alimentation",
+    "items": {
+      "Plat du jour": 14,
+      "Entrecote": 26,
+      "Faux filet": 24,
+      "Magret de canard": 22,
+      "Milanaise de volaille": 18,
+      "Tartare classique": 18,
+      "Tartare special": 22,
+      "Burger": 18,
+      "Salade cesar": 16,
+      "Salade chevre chaud": 15,
+      "Pates bolognese": 16,
+      "Pates carbonara": 16,
+      "Gnocchi gorgonzola": 18,
+      "Ravioli frais": 20,
+      "Menu": 16,
+      "Menu enfants": 12,
+      "Dessert": 8,
+      "Cafe gourmand": 9
+    }
+  },
+  "Pizza": {
+    "tva_rate": 10,
+    "category": "alimentation",
+    "items": {
+      "Marguerite": 10,
+      "Reine": 12,
+      "Calzone": 13,
+      "Sicilienne": 13,
+      "4 saisons": 16,
+      "4 fromages": 16,
+      "Chevre miel": 14,
+      "Aubergine": 15,
+      "Crevettes": 16,
+      "Parme": 17,
+      "Calabrese": 17,
+      "Spicy": 16
+    }
+  },
+  "Emporter": {
+    "tva_rate": 5.5,
+    "category": "emporte",
+    "items": {
+      "Marguerite": 10,
+      "Reine": 12,
+      "Calzone": 13,
+      "4 saisons": 15,
+      "4 fromages": 15,
+      "Spicy": 15,
+      "Plat du jour": 13,
+      "Burger": 17,
+      "Pates bolognese": 15,
+      "Salade cesar": 15
+    }
+  },
+  "Boissons": {
+    "tva_rate": 10,
+    "category": "boisson sans alcool",
+    "items": {
+      "Eau plate 75cl": 4,
+      "Eau gazeuse 75cl": 4,
+      "Coca-Cola": 3.5,
+      "Limonade": 3,
+      "Jus d orange": 3.5,
+      "Cafe": 2.5,
+      "The": 3
+    }
+  },
+  "Alcool": {
+    "tva_rate": 20,
+    "category": "alcool",
+    "items": {
+      "Biere pression": 4,
+      "Biere bouteille": 5,
+      "Verre de vin blanc": 5,
+      "Verre de vin rouge": 5,
+      "Coupe de champagne": 8,
+      "Cocktail": 9,
+      "Digestif": 6
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "receipt_printer": {"enabled": false, "ip": "192.168.1.100", "port": 9100, "timeout": 5},
+  "kitchen_printer": {"enabled": false, "ip": "192.168.1.101", "port": 9100, "timeout": 5},
+  "bar_printer":     {"enabled": false, "ip": "192.168.1.102", "port": 9100, "timeout": 5}
+}

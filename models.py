@@ -4,10 +4,18 @@ models.py — Dataclasses Order / OrderItem
 from dataclasses import dataclass, field
 from typing import List, Dict, Any
 from datetime import datetime, timezone
+import time
 
 
 def _now():
     return datetime.now(timezone.utc)
+
+
+def _utc_to_local(dt: datetime) -> datetime:
+    """Convertit un datetime UTC en heure locale (compatible sans pytz)."""
+    timestamp = dt.timestamp()
+    local_dt = datetime.fromtimestamp(timestamp)
+    return local_dt
 
 
 @dataclass
@@ -67,11 +75,11 @@ class Order:
         for item in self.items:
             if item.tva_rate not in s:
                 s[item.tva_rate] = {"ht": 0.0, "tva": 0.0, "ttc": 0.0}
-            ht  = item.total / (1 + item.tva_rate / 100)
-            tva = item.total - ht
-            s[item.tva_rate]["ht"]  += ht
-            s[item.tva_rate]["tva"] += tva
-            s[item.tva_rate]["ttc"] += item.total
+            ht  = round(item.total / (1 + item.tva_rate / 100), 2)
+            tva = round(item.total - ht, 2)
+            s[item.tva_rate]["ht"]  = round(s[item.tva_rate]["ht"]  + ht,  2)
+            s[item.tva_rate]["tva"] = round(s[item.tva_rate]["tva"] + tva, 2)
+            s[item.tva_rate]["ttc"] = round(s[item.tva_rate]["ttc"] + item.total, 2)
         return s
 
     def to_dict(self) -> Dict[str, Any]:

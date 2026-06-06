@@ -10,7 +10,7 @@ from typing import Set
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import uvicorn
 
 from services import (OrderService, SalesService, TicketService, PrinterService,
@@ -156,13 +156,16 @@ async def pay(table: str, payload: PaymentPayload):
         raise HTTPException(400, "Commande vide")
     payments = payload.payments if payload.payments else [{"method": payload.method, "amount": order.total}]
     paid_total = round(sum(p["amount"] for p in payments), 2)
-    if paid_total < order.total:
+    if paid_total < round(order.total, 2) - 0.01:
         raise HTTPException(400, f"Montant insuffisant ({paid_total:.2f} < {order.total:.2f})")
     order.payments = payments
     order.payment_method = " + ".join(p["method"] for p in payments)
     order.is_paid = True
-    sales_svc.record_order(order)
-    sales_svc.save_to_monthly_file(order)
+    try:
+        sales_svc.record_order(order)
+        sales_svc.save_to_monthly_file(order)
+    except Exception as e:
+        raise HTTPException(500, f"Erreur enregistrement vente: {e}")
     order_svc.clear(table)
     await _broadcast({"type": "order_update", "table": table,
                       "order": order_svc.get_order(table).to_dict()})
@@ -252,7 +255,7 @@ async def save_menu(payload: MenuSavePayload):
 
 
 class SplitPayload(BaseModel):
-    n: int
+    n: int = Field(..., ge=2, le=20)
 
 @app.post("/api/order/{table}/split")
 async def split_order(table: str, payload: SplitPayload):

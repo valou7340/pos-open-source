@@ -3,7 +3,7 @@ services.py — OrderService, SalesService, TicketService, PrinterService
 """
 import json, os, socket, threading, datetime
 from typing import Dict, List, Optional
-from models import Order, OrderItem
+from models import Order, OrderItem, _utc_to_local
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -162,6 +162,7 @@ class SalesService:
     def _check_day_rollover(self) -> None:
         today = datetime.datetime.now().strftime("%Y-%m-%d")
         if self._daily.get("date") != today:
+            self._save()  # flush le jour précédent avant rollover
             self._daily = self._load()
 
     def record_order(self, order: Order) -> None:
@@ -342,8 +343,9 @@ class PrinterService:
         if siret: L.append(f"Siret: {siret}\n")
         L += [SEP, f"TICKET N°: {num:06d}\n"]
         if is_dup: L += ["\x1B\x21\x10", "*** DUPLICATA ***\n", "\x1B\x21\x00"]
+        local_dt = _utc_to_local(order.created_at)
         L += [f"Table: {order.table}\n",
-              f"Date: {order.created_at.strftime('%d/%m/%Y %H:%M')}\n", SEP,
+              f"Date: {local_dt.strftime('%d/%m/%Y %H:%M')}\n", SEP,
               "\x1B\x61\x00", "\x1B\x21\x10", "ARTICLE          QTE   PRIX\n",
               "\x1B\x21\x00", SEP]
         for item in order.items:
@@ -361,7 +363,7 @@ class PrinterService:
         SEP = "-----------------------------\n"
         L = ["\x1B\x40", "\x1B\x61\x01", "\x1B\x21\x30", f"{dest}\n", "\x1B\x21\x00", SEP,
              f"TICKET N°: {num:06d}\n", f"Table: {order.table}\n",
-             f"Heure: {order.created_at.strftime('%H:%M')}\n", SEP,
+             f"Heure: {_utc_to_local(order.created_at).strftime('%H:%M')}\n", SEP,
              "\x1B\x61\x00", "\x1B\x21\x08"]
         for item in items:
             L.append(f"{item.name[:16]:<16} {item.quantity:>3}\n")
